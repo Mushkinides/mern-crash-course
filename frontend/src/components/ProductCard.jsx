@@ -1,22 +1,36 @@
 import {
   Box,
+  Button,
   Heading,
   HStack,
   IconButton,
   Image,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Text,
   useColorModeValue,
+  useDisclosure,
   useToast,
+  VStack,
 } from "@chakra-ui/react";
 import { EditIcon, DeleteIcon } from "@chakra-ui/icons";
 import { useProductStore } from "../store/product";
+import { useState } from "react";
 
 const ProductCard = ({ product }) => {
+  const [updatedProduct, setUpdatedProduct] = useState(product);
   const textColor = useColorModeValue("gray.600", "gray.200");
   const bgColor = useColorModeValue("white", "gray.800");
-
-  const { deleteProduct } = useProductStore();
+  const { deleteProduct, updateProduct } = useProductStore();
   const toast = useToast();
+  const { isOpen, onOpen, onClose } = useDisclosure();
+
   const handleDeleteProduct = async (productId) => {
     const { success, message } = await deleteProduct(productId);
 
@@ -31,6 +45,26 @@ const ProductCard = ({ product }) => {
       toast({
         title: "Success",
         description: message,
+        status: "success",
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleUpdateProduct = async (productId, updatedProduct) => {
+    const { success, message } = await updateProduct(productId, updatedProduct);
+    onClose();
+    if (!success) {
+      toast({
+        title: "Error",
+        description: message,
+        status: "error",
+        isClosable: true,
+      });
+    } else {
+      toast({
+        title: "Success",
+        description: "Product updated successfully",
         status: "success",
         isClosable: true,
       });
@@ -60,11 +94,11 @@ const ProductCard = ({ product }) => {
         </Heading>
 
         <Text fontWeight={"bold"} fontSize={"xl"} color={textColor} mb={4}>
-          {product.price}
+          ${product.price}
         </Text>
 
         <HStack spacing={2}>
-          <IconButton icon={<EditIcon />} colorScheme="blue" />
+          <IconButton icon={<EditIcon />} onClick={onOpen} colorScheme="blue" />
           <IconButton
             icon={<DeleteIcon />}
             onClick={() => handleDeleteProduct(product._id)}
@@ -72,6 +106,61 @@ const ProductCard = ({ product }) => {
           />
         </HStack>
       </Box>
+
+      <Modal isOpen={isOpen} onClose={onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Update Product</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <Input
+                placeholder="Product Name"
+                name="name"
+                value={updatedProduct.name}
+                onChange={(e) =>
+                  setUpdatedProduct({ ...updatedProduct, name: e.target.value })
+                }
+              />
+              <Input
+                placeholder="Price"
+                name="price"
+                type="number"
+                value={updatedProduct.price}
+                onChange={(e) =>
+                  setUpdatedProduct({
+                    ...updatedProduct,
+                    price: e.target.value,
+                  })
+                }
+              />
+              <Input
+                placeholder="Image URL"
+                name="image"
+                value={updatedProduct.image}
+                onChange={(e) =>
+                  setUpdatedProduct({
+                    ...updatedProduct,
+                    image: e.target.value,
+                  })
+                }
+              />
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button
+              colorScheme="blue"
+              onClick={() => handleUpdateProduct(product._id, updatedProduct)}
+              mr={3}
+            >
+              Update
+            </Button>
+            <Button colorScheme="ghost" onClick={onClose} textColor={textColor}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Box>
   );
 };
